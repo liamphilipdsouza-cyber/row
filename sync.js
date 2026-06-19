@@ -75,6 +75,7 @@
     async function pushNow() {
       if (!supa) return;
       const state = collect();
+      if (Object.keys(state).length === 0) return;
       const json = JSON.stringify(state);
       if (json === lastSyncedJson) return;
       try {
@@ -88,6 +89,7 @@
     function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, 250); }
     function flushOnUnload() {
       const state = collect();
+      if (Object.keys(state).length === 0) return;
       const json = JSON.stringify(state);
       if (json === lastSyncedJson) return;
       try {
@@ -121,6 +123,7 @@
           event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + appKey,
         }, (payload) => {
           if (!payload.new || !payload.new.data) return;
+          if (Object.keys(payload.new.data).length === 0) return;
           const incoming = JSON.stringify(payload.new.data);
           if (incoming === lastSyncedJson) return;
           lastSyncedJson = incoming;
