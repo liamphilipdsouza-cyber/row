@@ -65,9 +65,13 @@
           const local = localStorage.getItem(k);
           if (local !== incoming) { try { origSet(k, incoming); changed = true; } catch (e) {} }
         }
+        // Never delete local keys that aren't in remote — remote may be partial.
+        // If local has keys remote is missing, push them up instead.
+        let localHasExtra = false;
         for (const k of listAllKeys()) {
-          if (!(k in remote)) { try { origRemove(k); changed = true; } catch (e) {} }
+          if (!(k in remote)) { localHasExtra = true; break; }
         }
+        if (localHasExtra) schedulePush();
       } finally { suppressSync = false; }
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
       return changed;
