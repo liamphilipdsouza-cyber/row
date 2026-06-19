@@ -3375,6 +3375,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   safeRenderTicker();
   setInterval(safeRenderTicker, 1500);
 
+  window.addEventListener('storage', function () {
+    renderAllNetWorth();
+    renderSubs();
+  });
 })();
 </script>
 <script>
