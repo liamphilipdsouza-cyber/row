@@ -320,119 +320,137 @@ body::after {
   .modal { padding: 22px 18px 20px; }
 }
 
-/* Theme picker */
-.theme-grid {
+/* ── Theme Picker ─────────────────────────────────────────── */
+.tp-section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* Category tabs */
+.tp-cats {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.tp-cat-btn {
+  padding: 5px 11px; border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 20px; background: transparent;
+  color: var(--text-tertiary); font-family: inherit;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
+  white-space: nowrap;
+}
+.tp-cat-btn.active {
+  background: rgba(255,255,255,0.12); color: var(--text-primary);
+  border-color: rgba(255,255,255,0.22);
+}
+
+/* Grid */
+.tp-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 9px;
 }
-.theme-tile {
-  border-radius: 14px;
+@media (min-width: 480px) { .tp-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.tp-tile {
+  border-radius: 13px;
   border: 2px solid rgba(255,255,255,0.07);
   overflow: hidden;
   cursor: pointer;
-  transition: border-color 0.18s, transform 0.15s;
+  transition: border-color 0.16s, transform 0.14s, box-shadow 0.16s;
   background: rgba(255,255,255,0.03);
   -webkit-tap-highlight-color: transparent;
-}
-.theme-tile:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.18); }
-.theme-tile.selected { border-color: rgba(255,255,255,0.55); }
-.theme-preview {
-  width: 100%; height: 66px;
   position: relative;
-  overflow: hidden;
 }
-/* None */
-.theme-preview.prev-none { background: #050506; }
-/* Matrix dark */
-.theme-preview.prev-matrix-dark { background: #000; }
-.theme-preview.prev-matrix-dark::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: repeating-linear-gradient(180deg,
-    transparent 0px, transparent 12px,
-    rgba(0,255,65,0.18) 12px, rgba(0,255,65,0.18) 13px);
-  background-size: 16px 16px;
-}
-/* Matrix light */
-.theme-preview.prev-matrix-light { background: #eaf5e8; }
-.theme-preview.prev-matrix-light::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: repeating-linear-gradient(180deg,
-    transparent 0px, transparent 12px,
-    rgba(0,150,40,0.22) 12px, rgba(0,150,40,0.22) 13px);
-  background-size: 16px 16px;
-}
-/* Aurora dark */
-.theme-preview.prev-aurora-dark {
-  background: linear-gradient(160deg, #020524 0%, #040820 55%, #040608 100%);
-}
-.theme-preview.prev-aurora-dark::before {
-  content: '';
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 80% 30% at 30% 40%, rgba(0,255,128,0.30), transparent 60%),
-    radial-gradient(ellipse 60% 25% at 65% 30%, rgba(140,0,255,0.25), transparent 55%),
-    radial-gradient(ellipse 70% 28% at 50% 55%, rgba(255,0,160,0.20), transparent 60%);
-}
-/* Aurora light */
-.theme-preview.prev-aurora-light {
-  background: linear-gradient(160deg, #9bbcd8 0%, #c0d8ee 60%, #d8ebf5 100%);
-}
-.theme-preview.prev-aurora-light::before {
-  content: '';
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 80% 30% at 30% 40%, rgba(0,200,100,0.18), transparent 60%),
-    radial-gradient(ellipse 60% 25% at 65% 30%, rgba(100,0,200,0.12), transparent 55%);
-}
-/* Origami light */
-.theme-preview.prev-origami-light {
-  background: linear-gradient(165deg, #dceefb 0%, #eaf1fc 55%, #f7eff0 100%);
-}
-.theme-preview.prev-origami-light::before {
-  content: '';
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 35% 18% at 20% 30%, rgba(255,255,255,0.65), transparent 70%),
-    radial-gradient(ellipse 28% 15% at 65% 20%, rgba(255,255,255,0.55), transparent 70%);
-}
-/* Origami dark */
-.theme-preview.prev-origami-dark {
-  background: linear-gradient(165deg, #0a1428 0%, #0f0a22 55%, #160a18 100%);
-}
-.theme-preview.prev-origami-dark::before {
-  content: '';
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 35% 18% at 20% 30%, rgba(255,255,255,0.07), transparent 70%),
-    radial-gradient(ellipse 28% 15% at 65% 20%, rgba(255,255,255,0.06), transparent 70%);
+.tp-tile:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.22); }
+.tp-tile.tp-active {
+  border-color: #10b981;
+  box-shadow: 0 0 0 1px #10b981, 0 0 14px rgba(16,185,129,0.35);
 }
 
-.theme-check {
-  position: absolute; top: 6px; right: 6px;
-  width: 20px; height: 20px; border-radius: 50%;
-  background: rgba(255,255,255,0.9);
-  color: #000;
-  font-size: 11px; font-weight: 700;
-  display: none;
-  align-items: center; justify-content: center;
+/* Mini preview */
+.tp-preview {
+  width: 100%; height: 58px;
+  position: relative; overflow: hidden; flex-shrink: 0;
 }
-.theme-tile.selected .theme-check { display: flex; }
+.tp-check {
+  position: absolute; top: 5px; right: 5px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #10b981;
+  color: #fff; font-size: 10px; font-weight: 700;
+  display: none; align-items: center; justify-content: center;
+}
+.tp-tile.tp-active .tp-check { display: flex; }
 
-.theme-info { padding: 8px 10px 10px; }
-.theme-name { font-size: 12px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
-.theme-tag  { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; line-height: 1.3; }
-.theme-variant-row { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
-.theme-var-btn {
-  padding: 4px 10px; border: 1px solid rgba(255,255,255,0.09);
-  border-radius: 7px; background: transparent;
-  color: var(--text-tertiary); font-family: inherit;
-  font-size: 10px; font-weight: 700; cursor: pointer;
-  transition: background 0.13s, color 0.13s, border-color 0.13s;
+/* Theme info footer */
+.tp-info { padding: 7px 9px 9px; }
+.tp-name { font-size: 11.5px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; line-height: 1.2; }
+.tp-desc { font-size: 9.5px; color: var(--text-tertiary); margin-top: 2px; line-height: 1.3; }
+
+/* Animation toggle */
+.tp-anim-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 16px; padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
 }
-.theme-var-btn.active { background: rgba(255,255,255,0.12); color: var(--text-primary); border-color: rgba(255,255,255,0.20); }
+.tp-anim-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.tp-anim-sub   { font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
+.tp-toggle {
+  position: relative; width: 42px; height: 24px; flex-shrink: 0;
+}
+.tp-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.tp-slider {
+  position: absolute; inset: 0; border-radius: 24px;
+  background: rgba(255,255,255,0.12); cursor: pointer;
+  transition: background 0.2s;
+}
+.tp-slider::before {
+  content: '';
+  position: absolute; left: 3px; top: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; transition: transform 0.2s;
+}
+.tp-toggle input:checked + .tp-slider { background: #10b981; }
+.tp-toggle input:checked + .tp-slider::before { transform: translateX(18px); }
+
+/* "None" tile */
+.tp-none-tile .tp-preview { background: #060608; }
+.tp-none-tile .tp-preview::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 50% at 80% 14%, rgba(224,118,88,0.20), transparent 50%);
+}
+
+/* Per-theme preview backgrounds */
+[data-theme-id="mesh"]         .tp-preview { background: linear-gradient(135deg,#0a0a14,#0d1a2a,#120a1a); }
+[data-theme-id="mesh"]         .tp-preview::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 20% 20%,rgba(16,185,129,0.30),transparent 55%),radial-gradient(ellipse 60% 50% at 80% 15%,rgba(59,130,246,0.25),transparent 55%),radial-gradient(ellipse 55% 55% at 70% 80%,rgba(168,85,247,0.22),transparent 55%); }
+[data-theme-id="aurora"]       .tp-preview { background: linear-gradient(135deg,#050515,#0a0530,#050510); }
+[data-theme-id="aurora"]       .tp-preview::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 35% at 25% 40%,rgba(100,60,255,0.40),transparent 60%),radial-gradient(ellipse 60% 28% at 70% 25%,rgba(200,0,255,0.30),transparent 55%); }
+[data-theme-id="liquid-metal"] .tp-preview { background:linear-gradient(135deg,#1c1c1c,#2e2e2e,#181818); }
+[data-theme-id="liquid-metal"] .tp-preview::before { content:'';position:absolute;inset:0;background:repeating-linear-gradient(105deg,transparent,transparent 5px,rgba(255,255,255,0.04) 5px,rgba(255,255,255,0.04) 6px); }
+[data-theme-id="brutalist"]    .tp-preview { background:#1a1a1a;background-image:linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px);background-size:12px 12px; }
+[data-theme-id="brutalist"]    .tp-preview::after { content:'';position:absolute;top:0;right:0;width:30%;height:4px;background:rgba(239,68,68,0.85); }
+[data-theme-id="volcanic"]     .tp-preview { background:linear-gradient(180deg,#0d0000,#1a0200,#080000); }
+[data-theme-id="volcanic"]     .tp-preview::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 40% 70%,rgba(255,80,0,0.35),transparent 60%),radial-gradient(ellipse 45% 40% at 75% 50%,rgba(200,20,0,0.25),transparent 55%); }
+[data-theme-id="cyberpunk"]    .tp-preview { background:#000; }
+[data-theme-id="cyberpunk"]    .tp-preview::before { content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,255,255,0.025) 0px,rgba(0,255,255,0.025) 1px,transparent 1px,transparent 4px),radial-gradient(ellipse 50% 50% at 15% 40%,rgba(255,0,255,0.18),transparent 55%),radial-gradient(ellipse 40% 40% at 80% 55%,rgba(0,255,255,0.15),transparent 55%); }
+[data-theme-id="synthwave"]    .tp-preview { background:linear-gradient(180deg,#1a0033,#2a004a,#1a0066 70%,#000 100%); }
+[data-theme-id="synthwave"]    .tp-preview::before { content:'';position:absolute;left:0;bottom:0;width:100%;height:60%;background:repeating-linear-gradient(90deg,rgba(255,0,255,0.22) 0px,rgba(255,0,255,0.22) 1px,transparent 1px,transparent 12px),repeating-linear-gradient(0deg,rgba(255,0,255,0.14) 0px,rgba(255,0,255,0.14) 1px,transparent 1px,transparent 12px); }
+[data-theme-id="topographic"]  .tp-preview { background:#0a141e; }
+[data-theme-id="topographic"]  .tp-preview::before { content:'';position:absolute;inset:0;background:repeating-linear-gradient(170deg,transparent,transparent 5px,rgba(200,220,255,0.10) 5px,rgba(200,220,255,0.10) 6px); }
+[data-theme-id="blueprint"]    .tp-preview { background:#0d2847;background-image:linear-gradient(rgba(255,255,255,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.07) 1px,transparent 1px);background-size:10px 10px; }
+[data-theme-id="zen"]          .tp-preview { background:linear-gradient(165deg,#f5f1e8,#ede8dc); }
+[data-theme-id="zen"]          .tp-preview::before { content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 6px,rgba(180,155,120,0.10) 6px,rgba(180,155,120,0.10) 7px); }
+[data-theme-id="nordic"]       .tp-preview { background:linear-gradient(180deg,#0a1929,#0d2240,#0a1520); }
+[data-theme-id="nordic"]       .tp-preview::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 35% at 30% 35%,rgba(0,220,100,0.32),transparent 60%),radial-gradient(ellipse 60% 25% at 65% 25%,rgba(80,0,200,0.25),transparent 55%); }
+[data-theme-id="ocean"]        .tp-preview { background:linear-gradient(180deg,#001528,#002040,#001228); }
+[data-theme-id="ocean"]        .tp-preview::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 30% 50%,rgba(0,220,255,0.15),transparent 55%),radial-gradient(ellipse 40% 40% at 70% 40%,rgba(0,255,200,0.12),transparent 50%); }
+[data-theme-id="matrix"]       .tp-preview { background:#000; }
+[data-theme-id="matrix"]       .tp-preview::before { content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,transparent,transparent 10px,rgba(0,255,65,0.18) 10px,rgba(0,255,65,0.18) 11px);background-size:14px 14px; }
+[data-theme-id="space"]        .tp-preview { background:#00000f; }
+[data-theme-id="space"]        .tp-preview::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse 40% 40% at 80% 20%,rgba(255,220,80,0.40),transparent 50%),radial-gradient(ellipse 60% 50% at 20% 60%,rgba(180,80,255,0.18),transparent 55%),radial-gradient(ellipse 45% 40% at 55% 75%,rgba(255,100,200,0.14),transparent 50%); }
+[data-theme-id="sakura"]       .tp-preview { background:linear-gradient(165deg,#1a0d1a,#2a1525,#1a0d1a); }
+[data-theme-id="sakura"]       .tp-preview::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse 55% 55% at 45% 55%,rgba(255,180,200,0.20),transparent 60%); }
 </style>
 </head>
 <body>
@@ -614,68 +632,38 @@ body::after {
       <button class="whoop-btn" id="whoopBtn" type="button"></button>
     </div>
 
-    <!-- Wallpaper divider -->
+    <!-- Theme picker divider -->
     <div class="settings-divider"></div>
-    <div class="settings-section-label">Wallpaper</div>
+    <div class="tp-section-label">🎨 Themes</div>
 
-    <div class="theme-grid" id="themeGrid">
+    <!-- Category tabs -->
+    <div class="tp-cats" id="tpCats">
+      <button class="tp-cat-btn active" data-cat="all">All</button>
+      <button class="tp-cat-btn" data-cat="premium">Premium</button>
+      <button class="tp-cat-btn" data-cat="bold">Bold</button>
+      <button class="tp-cat-btn" data-cat="minimal">Minimal</button>
+      <button class="tp-cat-btn" data-cat="atmospheric">Atmospheric</button>
+      <button class="tp-cat-btn" data-cat="themed">Themed</button>
+    </div>
 
-      <!-- None -->
-      <div class="theme-tile" data-theme="none" data-variant="dark">
-        <div class="theme-preview prev-none" style="position:relative;">
-          <div class="theme-check">✓</div>
-        </div>
-        <div class="theme-info">
-          <div class="theme-name">None</div>
-          <div class="theme-tag">Default dark background</div>
-        </div>
+    <!-- None tile -->
+    <div class="tp-grid" id="tpGrid">
+      <div class="tp-tile tp-none-tile" data-theme-id="none" data-cat="all">
+        <div class="tp-preview"><div class="tp-check">✓</div></div>
+        <div class="tp-info"><div class="tp-name">None</div><div class="tp-desc">Default background</div></div>
       </div>
+    </div>
 
-      <!-- Matrix Rain -->
-      <div class="theme-tile" data-theme="matrix" data-variant="dark">
-        <div class="theme-preview prev-matrix-dark" id="prevMatrix" style="position:relative;">
-          <div class="theme-check">✓</div>
-        </div>
-        <div class="theme-info">
-          <div class="theme-name">Matrix Rain</div>
-          <div class="theme-tag">Digital code cascade</div>
-          <div class="theme-variant-row">
-            <button class="theme-var-btn active" data-tile-theme="matrix" data-v="dark">Dark</button>
-            <button class="theme-var-btn" data-tile-theme="matrix" data-v="light">Light</button>
-          </div>
-        </div>
+    <!-- Animation toggle -->
+    <div class="tp-anim-row">
+      <div>
+        <div class="tp-anim-label">🎬 Animations</div>
+        <div class="tp-anim-sub">Disable to save battery</div>
       </div>
-
-      <!-- Aurora Lake -->
-      <div class="theme-tile" data-theme="aurora" data-variant="dark">
-        <div class="theme-preview prev-aurora-dark" id="prevAurora" style="position:relative;">
-          <div class="theme-check">✓</div>
-        </div>
-        <div class="theme-info">
-          <div class="theme-name">Aurora Lake</div>
-          <div class="theme-tag">Aurora reflected on still mountain water</div>
-          <div class="theme-variant-row">
-            <button class="theme-var-btn active" data-tile-theme="aurora" data-v="dark">Dark</button>
-            <button class="theme-var-btn" data-tile-theme="aurora" data-v="light">Light</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Origami Sky -->
-      <div class="theme-tile" data-theme="origami" data-variant="light">
-        <div class="theme-preview prev-origami-light" id="prevOrigami" style="position:relative;">
-          <div class="theme-check">✓</div>
-        </div>
-        <div class="theme-info">
-          <div class="theme-name">Origami Sky</div>
-          <div class="theme-tag">Paper planes drifting on pastel breeze</div>
-          <div class="theme-variant-row">
-            <button class="theme-var-btn" data-tile-theme="origami" data-v="dark">Dark</button>
-            <button class="theme-var-btn active" data-tile-theme="origami" data-v="light">Light</button>
-          </div>
-        </div>
-      </div>
-
+      <label class="tp-toggle">
+        <input type="checkbox" id="animToggle" checked>
+        <span class="tp-slider"></span>
+      </label>
     </div>
 
   </div>
@@ -974,64 +962,55 @@ body::after {
   }
 
   // ── Theme picker ──────────────────────────────────────────────────────
-  const PREVIEW_CLASSES = {
-    matrix: { dark: 'prev-matrix-dark', light: 'prev-matrix-light' },
-    aurora: { dark: 'prev-aurora-dark', light: 'prev-aurora-light' },
-    origami: { dark: 'prev-origami-dark', light: 'prev-origami-light' },
-    none: { dark: 'prev-none', light: 'prev-none' },
-  };
 
-  function syncThemeUI() {
-    const saved = (() => { try { return JSON.parse(localStorage.getItem('app:theme')) || {}; } catch { return {}; } })();
-    const activeName = saved.name || 'none';
-    const activeVariant = saved.variant || 'dark';
-
-    document.querySelectorAll('.theme-tile').forEach(tile => {
-      const name = tile.dataset.theme;
-      const variant = tile.dataset.variant;
-      // Update selection highlight
-      tile.classList.toggle('selected', name === activeName && variant === activeVariant);
+  function buildThemePicker() {
+    if (!window.Themes || !window.Themes.META) return;
+    const grid = document.getElementById('tpGrid');
+    if (!grid) return;
+    grid.querySelectorAll('[data-theme-id]:not([data-theme-id="none"])').forEach(el => el.remove());
+    window.Themes.META.forEach(t => {
+      const tile = document.createElement('div');
+      tile.className = 'tp-tile';
+      tile.dataset.themeId = t.id;
+      tile.dataset.cat = t.cat;
+      tile.innerHTML =
+        '<div class="tp-preview"><div class="tp-check">✓</div></div>' +
+        '<div class="tp-info"><div class="tp-name">' + t.label + '</div>' +
+        '<div class="tp-desc">' + t.desc + '</div></div>';
+      grid.appendChild(tile);
     });
+    syncThemePickerUI();
   }
 
-  document.getElementById('themeGrid').addEventListener('click', e => {
-    // Variant button click
-    const varBtn = e.target.closest('[data-v]');
-    if (varBtn) {
-      e.stopPropagation();
-      const themeName = varBtn.dataset.tileTheme;
-      const variant = varBtn.dataset.v;
+  function syncThemePickerUI() {
+    const active = window.Themes ? window.Themes.getTheme() : null;
+    document.querySelectorAll('.tp-tile').forEach(el => {
+      el.classList.toggle('tp-active', el.dataset.themeId === (active || 'none'));
+    });
+    const animToggle = document.getElementById('animToggle');
+    if (animToggle && window.Themes) animToggle.checked = window.Themes.getAnimOn();
+  }
 
-      // Update variant button states within this tile's row
-      varBtn.closest('.theme-variant-row').querySelectorAll('.theme-var-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.v === variant);
-      });
+  document.getElementById('tpCats').addEventListener('click', e => {
+    const btn = e.target.closest('.tp-cat-btn');
+    if (!btn) return;
+    const cat = btn.dataset.cat;
+    document.querySelectorAll('.tp-cat-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('#tpGrid .tp-tile').forEach(tile => {
+      tile.style.display = (cat === 'all' || tile.dataset.cat === cat || tile.dataset.themeId === 'none') ? '' : 'none';
+    });
+  });
 
-      // Update the tile's data-variant and preview class
-      const tile = varBtn.closest('.theme-tile');
-      tile.dataset.variant = variant;
-      const preview = tile.querySelector('.theme-preview');
-      const classes = PREVIEW_CLASSES[themeName] || {};
-      preview.className = 'theme-preview ' + (classes[variant] || '');
-      preview.style.position = 'relative';
-      preview.appendChild(tile.querySelector('.theme-check'));
-
-      // If this theme is currently active, re-apply with new variant
-      const saved = (() => { try { return JSON.parse(localStorage.getItem('app:theme')) || {}; } catch { return {}; } })();
-      if (saved.name === themeName) {
-        if (window.Themes) window.Themes.apply(themeName, variant);
-      }
-      syncThemeUI();
-      return;
-    }
-
-    // Tile click — apply theme
-    const tile = e.target.closest('.theme-tile');
+  document.getElementById('tpGrid').addEventListener('click', e => {
+    const tile = e.target.closest('.tp-tile');
     if (!tile) return;
-    const name = tile.dataset.theme;
-    const variant = tile.dataset.variant;
-    if (window.Themes) window.Themes.apply(name, variant);
-    syncThemeUI();
+    const id = tile.dataset.themeId;
+    if (window.Themes) window.Themes.apply(id === 'none' ? 'none' : id);
+    syncThemePickerUI();
+  });
+
+  document.getElementById('animToggle').addEventListener('change', e => {
+    if (window.Themes) window.Themes.setAnim(e.target.checked);
   });
 
   // Redefine openModal to also refresh theme UI (second declaration wins via hoisting)
@@ -1039,7 +1018,8 @@ body::after {
     populateFields();
     modal.classList.add('show');
     whoopInit();
-    syncThemeUI();
+    buildThemePicker();
+    syncThemePickerUI();
   }
 
 })();
