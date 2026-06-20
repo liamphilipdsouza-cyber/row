@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="lock.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<title>Journal · Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
+<script src="topbar.js" defer></script>
+
+<style>
+:root {
+  --text-primary: #FAFAFA;
+  --text-secondary: #B8B6B0;
+  --text-tertiary: #76746E;
+  --success: #6BE3A4;
+  --warning: #F2C063;
+  --danger: #FF6B6B;
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: #050506;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  padding: max(28px, env(safe-area-inset-top)) 20px 80px;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(180, 140, 220, 0.13), transparent 45%),
+    radial-gradient(circle at 80% 85%, rgba(180, 180, 200, 0.06), transparent 50%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: -2;
+  animation: drift 36s ease-in-out infinite alternate;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.014) 1px, transparent 1px);
+  background-size: 3px 3px;
+  pointer-events: none;
+  z-index: -1;
+}
+@keyframes drift {
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-22px, 14px, 0); }
+}
+
+.page { max-width: 680px; margin: 0 auto; }
+
+/* Page header */
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+  margin-bottom: 22px;
+}
+.dash-title {
+  margin: 0;
+  font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
+  background: linear-gradient(180deg, #FFFFFF 0%, #C7C4BC 120%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+@media (max-width: 480px) { .dash-title { font-size: 22px; } }
+
+.gm-streak {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 13px; border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  color: var(--text-tertiary);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.streak-live { color: var(--warning); }
+
+/* Stats row */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-bottom: 22px;
+}
+.stat {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px; padding: 14px;
+}
+.stat-num {
+  font-size: 28px; font-weight: 700;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.03em;
+  color: var(--text-primary); line-height: 1;
+}
+.stat-label {
+  margin-top: 6px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* Section headings */
+.section-title {
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px;
+}
+.section-title::before {
+  content: ''; width: 18px; height: 1px;
+  background: var(--text-tertiary); opacity: 0.6;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.08), transparent);
+}
+
+/* Glass card */
+.gm-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 18px;
+  padding: 22px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  overflow: hidden;
+}
+
+/* Composer */
+.composer-meta {
+  display: flex; align-items: baseline; justify-content: space-between;
+  flex-wrap: wrap; gap: 6px;
+  margin-bottom: 20px;
+}
+.composer-date {
+  font-size: 17px; font-weight: 700; color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.composer-time {
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+.composer-updated {
+  font-size: 11px; color: var(--text-tertiary); font-style: italic;
+}
+
+.composer-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 8px; display: block;
+}
+.journal-textarea {
+  display: block; width: 100%;
+  min-height: 130px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  color: var(--text-primary);
+  font-family: var(--font); font-size: 15px; line-height: 1.75;
+  resize: none; outline: none;
+  padding: 4px 0 14px;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.journal-textarea:focus { border-bottom-color: rgba(255,255,255,0.22); }
+.journal-textarea::placeholder { color: var(--text-tertiary); }
+
+/* Gratitude section */
+.gratitude-section { margin-top: 18px; }
+.grat-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.grat-item:last-child { border-bottom: 0; }
+.grat-num {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  color: var(--text-tertiary); width: 18px; flex-shrink: 0; text-align: right;
+}
+.grat-input {
+  flex: 1; min-width: 0;
+  background: transparent; border: 0; outline: none;
+  color: var(--text-primary); font-family: var(--font); font-size: 14px; line-height: 1.5;
+  padding: 2px 0;
+}
+.grat-input::placeholder { color: var(--text-tertiary); }
+
+/* Save button row */
+.composer-footer {
+  margin-top: 20px; padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.gm-add {
+  padding: 11px 24px; border: 0; border-radius: 12px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #E8E5DD 100%);
+  color: #0A0A0B; font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.35);
+  transition: transform 0.1s, filter 0.15s;
+}
+.gm-add:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.gm-add:active { transform: translateY(0); }
+.gm-ghost {
+  padding: 11px 18px;
+  border: 1px solid rgba(255,255,255,0.10); border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-primary); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.gm-ghost:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); }
+.save-confirm {
+  font-size: 13px; font-weight: 600; color: var(--success);
+  opacity: 0; transition: opacity 0.25s;
+}
+.save-confirm.show { opacity: 1; }
+
+/* Past entries */
+.entry-card {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: border-color 0.18s;
+}
+.entry-card:hover { border-color: rgba(255,255,255,0.12); }
+.entry-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.entry-date-col { flex: 1; min-width: 0; }
+.entry-date-str {
+  font-size: 13px; font-weight: 700; color: var(--text-primary);
+  white-space: nowrap;
+}
+.entry-time-str {
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary);
+  margin-top: 2px;
+}
+.entry-preview {
+  font-size: 13px; color: var(--text-tertiary); flex: 2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  min-width: 0;
+}
+.entry-chevron {
+  font-size: 13px; color: var(--text-tertiary); flex-shrink: 0;
+  transition: transform 0.22s ease;
+}
+.entry-card.open .entry-chevron { transform: rotate(180deg); }
+.entry-delete {
+  border: 0; background: transparent; color: var(--text-tertiary);
+  font-size: 18px; cursor: pointer; padding: 0 4px; flex-shrink: 0;
+  opacity: 0.5; transition: opacity 0.18s, color 0.18s; line-height: 1;
+}
+.entry-head:hover .entry-delete { opacity: 1; }
+.entry-delete:hover { color: var(--danger); }
+
+.entry-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.3s ease;
+  padding: 0 16px;
+}
+.entry-card.open .entry-body { max-height: 800px; }
+.entry-body-inner { padding-bottom: 16px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px; }
+.entry-section-lbl {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 8px;
+}
+.entry-thoughts-text {
+  font-size: 14px; color: var(--text-primary); line-height: 1.7;
+  white-space: pre-wrap; word-break: break-word;
+  margin-bottom: 16px;
+}
+.entry-grat-list { margin: 0; padding: 0; list-style: none; }
+.entry-grat-list li {
+  display: flex; gap: 10px; align-items: baseline;
+  font-size: 14px; color: var(--text-primary); line-height: 1.6;
+  padding: 3px 0;
+}
+.entry-grat-list li .grat-num { color: var(--text-tertiary); }
+
+.empty-state {
+  text-align: center; font-size: 13px; font-style: italic;
+  color: var(--text-tertiary); padding: 20px 0;
+}
+
+@media (max-width: 480px) {
+  body { padding: max(20px, env(safe-area-inset-top)) 14px 80px; }
+  .gm-card { padding: 16px 16px; }
+  .stat-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-num { font-size: 22px; }
+  .entry-preview { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-header">
+    <h1 class="dash-title">Journal</h1>
+    <span class="gm-streak" id="streakPill">📓 — day streak</span>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    <div class="stat">
+      <div class="stat-num" id="statStreak">0</div>
+      <div class="stat-label">Day Streak</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-label">Total Entries</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="statThisWeek">0</div>
+      <div class="stat-label">This Week</div>
+    </div>
+  </div>
+
+  <!-- Today's composer -->
+  <div class="section-title" id="composerLabel">Today</div>
+  <div class="gm-card" id="composerCard">
+    <div class="composer-meta">
+      <span class="composer-date" id="composerDate"></span>
+      <span class="composer-time" id="composerTime"></span>
+    </div>
+
+    <label class="composer-label">Thoughts &amp; Feelings</label>
+    <textarea class="journal-textarea" id="thoughtsTA"
+      placeholder="What's on your mind today? How are you feeling?"></textarea>
+
+    <div class="gratitude-section">
+      <label class="composer-label">Gratitude</label>
+      <div class="grat-item">
+        <span class="grat-num">1.</span>
+        <input class="grat-input" id="grat1" type="text" placeholder="I'm grateful for…" autocomplete="off">
+      </div>
+      <div class="grat-item">
+        <span class="grat-num">2.</span>
+        <input class="grat-input" id="grat2" type="text" placeholder="I'm grateful for…" autocomplete="off">
+      </div>
+      <div class="grat-item">
+        <span class="grat-num">3.</span>
+        <input class="grat-input" id="grat3" type="text" placeholder="I'm grateful for…" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="composer-footer">
+      <button class="gm-add" id="saveBtn" type="button">Save Entry</button>
+      <button class="gm-ghost" id="clearBtn" type="button" style="display:none">Clear</button>
+      <span class="save-confirm" id="saveConfirm">Saved ✓</span>
+      <span class="composer-updated" id="updatedNote" style="margin-left:auto"></span>
+    </div>
+  </div>
+
+  <!-- Past entries -->
+  <div class="section-title" style="margin-top: 10px">Past Entries</div>
+  <div id="pastList">
+    <div class="empty-state" id="emptyState">No past entries yet. Start journaling today!</div>
+  </div>
+
+</div><!-- /.page -->
+
+<script>
+(function () {
+  'use strict';
+
+  const STORE_KEY = 'journal:entries';
+
+  // ── helpers ───────────────────────────────────────────────────────
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+    catch { return []; }
+  }
+  function save(entries) {
+    localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+  }
+
+  function todayStr() {
+    return new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD'
+  }
+
+  function fmtDate(dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  function fmtDateShort(dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function nowTimeStr() {
+    return new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+
+  function calcStreak(entries) {
+    const dates = new Set(entries.map(function(e) { return e.date; }));
+    const today = todayStr();
+    let streak = 0;
+    const cur = new Date();
+    // If today has no entry, start checking from yesterday
+    if (!dates.has(today)) cur.setDate(cur.getDate() - 1);
+    while (true) {
+      const s = cur.toISOString().split('T')[0];
+      if (!dates.has(s)) break;
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    }
+    return streak;
+  }
+
+  function calcThisWeek(entries) {
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+    return entries.filter(function(e) { return new Date(e.ts) >= monday; }).length;
+  }
+
+  // ── composer clock ────────────────────────────────────────────────
+  const composerDateEl = document.getElementById('composerDate');
+  const composerTimeEl = document.getElementById('composerTime');
+  const composerLabelEl = document.getElementById('composerLabel');
+
+  function updateClock() {
+    composerDateEl.textContent = fmtDate(todayStr());
+    composerTimeEl.textContent = nowTimeStr();
+  }
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  // ── composer fields ───────────────────────────────────────────────
+  const thoughtsEl   = document.getElementById('thoughtsTA');
+  const grat1El      = document.getElementById('grat1');
+  const grat2El      = document.getElementById('grat2');
+  const grat3El      = document.getElementById('grat3');
+  const saveBtn      = document.getElementById('saveBtn');
+  const clearBtn     = document.getElementById('clearBtn');
+  const saveConfirm  = document.getElementById('saveConfirm');
+  const updatedNote  = document.getElementById('updatedNote');
+
+  function loadToday() {
+    const entries = load();
+    const today = todayStr();
+    return entries.find(function(e) { return e.date === today; }) || null;
+  }
+
+  function prefillComposer() {
+    const existing = loadToday();
+    if (existing) {
+      thoughtsEl.value        = existing.thoughts || '';
+      grat1El.value           = (existing.gratitude && existing.gratitude[0]) || '';
+      grat2El.value           = (existing.gratitude && existing.gratitude[1]) || '';
+      grat3El.value           = (existing.gratitude && existing.gratitude[2]) || '';
+      saveBtn.textContent     = 'Update Entry';
+      clearBtn.style.display  = '';
+      updatedNote.textContent = 'Logged at ' + existing.time;
+    } else {
+      thoughtsEl.value       = '';
+      grat1El.value          = '';
+      grat2El.value          = '';
+      grat3El.value          = '';
+      saveBtn.textContent    = 'Save Entry';
+      clearBtn.style.display = 'none';
+      updatedNote.textContent = '';
+    }
+  }
+
+  function hasContent() {
+    return thoughtsEl.value.trim() ||
+      grat1El.value.trim() || grat2El.value.trim() || grat3El.value.trim();
+  }
+
+  saveBtn.addEventListener('click', function() {
+    if (!hasContent()) {
+      thoughtsEl.focus();
+      return;
+    }
+    const today = todayStr();
+    let entries = load();
+    const idx = entries.findIndex(function(e) { return e.date === today; });
+    const entry = {
+      id:        today,
+      date:      today,
+      time:      nowTimeStr(),
+      ts:        Date.now(),
+      thoughts:  thoughtsEl.value.trim(),
+      gratitude: [
+        grat1El.value.trim(),
+        grat2El.value.trim(),
+        grat3El.value.trim()
+      ]
+    };
+    if (idx >= 0) entries[idx] = entry;
+    else entries.push(entry);
+    // Sort by date ascending
+    entries.sort(function(a, b) { return a.ts - b.ts; });
+    save(entries);
+    prefillComposer();
+    renderAll();
+    saveConfirm.classList.add('show');
+    setTimeout(function() { saveConfirm.classList.remove('show'); }, 1800);
+  });
+
+  clearBtn.addEventListener('click', function() {
+    thoughtsEl.value = '';
+    grat1El.value = '';
+    grat2El.value = '';
+    grat3El.value = '';
+    thoughtsEl.focus();
+  });
+
+  // ── past entries ──────────────────────────────────────────────────
+  const pastListEl  = document.getElementById('pastList');
+  const emptyStateEl = document.getElementById('emptyState');
+  const statStreakEl   = document.getElementById('statStreak');
+  const statTotalEl    = document.getElementById('statTotal');
+  const statThisWeekEl = document.getElementById('statThisWeek');
+  const streakPill     = document.getElementById('streakPill');
+
+  // Track which entry ids are expanded
+  const expanded = {};
+
+  function renderAll() {
+    const entries = load();
+    const today = todayStr();
+    const past = entries.filter(function(e) { return e.date !== today; }).reverse();
+
+    // Stats
+    const streak = calcStreak(entries);
+    const thisWeek = calcThisWeek(entries);
+    statStreakEl.textContent   = streak;
+    statTotalEl.textContent    = entries.length;
+    statThisWeekEl.textContent = thisWeek;
+    streakPill.innerHTML       = streak >= 1
+      ? '<span class="streak-live">🔥 ' + streak + ' day streak</span>'
+      : '📓 Start your streak';
+
+    // Past entries
+    // Clear old content but keep emptyState node structure
+    pastListEl.innerHTML = '';
+
+    if (past.length === 0) {
+      const msg = document.createElement('div');
+      msg.className = 'empty-state';
+      msg.textContent = entries.length === 0
+        ? 'No past entries yet. Start journaling today!'
+        : 'No past entries — just today\'s entry so far.';
+      pastListEl.appendChild(msg);
+      return;
+    }
+
+    past.forEach(function(entry) {
+      const preview = entry.thoughts
+        ? entry.thoughts.slice(0, 72) + (entry.thoughts.length > 72 ? '…' : '')
+        : (entry.gratitude && entry.gratitude.filter(Boolean).length
+            ? 'Grateful for: ' + entry.gratitude.filter(Boolean)[0]
+            : 'No thoughts recorded.');
+
+      const card = document.createElement('div');
+      card.className = 'entry-card' + (expanded[entry.id] ? ' open' : '');
+
+      // Head
+      const head = document.createElement('div');
+      head.className = 'entry-head';
+
+      const dateCol = document.createElement('div');
+      dateCol.className = 'entry-date-col';
+      dateCol.innerHTML =
+        '<div class="entry-date-str">' + fmtDateShort(entry.date) + '</div>' +
+        '<div class="entry-time-str">' + entry.time + '</div>';
+
+      const prev = document.createElement('div');
+      prev.className = 'entry-preview';
+      prev.textContent = preview;
+
+      const chev = document.createElement('span');
+      chev.className = 'entry-chevron';
+      chev.textContent = '▾';
+
+      const del = document.createElement('button');
+      del.className = 'entry-delete';
+      del.type = 'button';
+      del.setAttribute('aria-label', 'Delete entry');
+      del.textContent = '×';
+      del.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!del.dataset.confirm) {
+          del.textContent = 'Delete?';
+          del.style.color = 'var(--danger)';
+          del.dataset.confirm = '1';
+          setTimeout(function() {
+            if (del.dataset.confirm) {
+              del.textContent = '×';
+              del.style.color = '';
+              delete del.dataset.confirm;
+            }
+          }, 2500);
+        } else {
+          let ents = load();
+          ents = ents.filter(function(x) { return x.id !== entry.id; });
+          save(ents);
+          delete expanded[entry.id];
+          renderAll();
+        }
+      });
+
+      head.addEventListener('click', function() {
+        if (expanded[entry.id]) delete expanded[entry.id];
+        else expanded[entry.id] = true;
+        card.classList.toggle('open', !!expanded[entry.id]);
+      });
+
+      head.append(dateCol, prev, chev, del);
+
+      // Body
+      const body = document.createElement('div');
+      body.className = 'entry-body';
+      const inner = document.createElement('div');
+      inner.className = 'entry-body-inner';
+
+      if (entry.thoughts) {
+        const tLbl = document.createElement('div');
+        tLbl.className = 'entry-section-lbl';
+        tLbl.textContent = 'Thoughts & Feelings';
+        const tText = document.createElement('div');
+        tText.className = 'entry-thoughts-text';
+        tText.textContent = entry.thoughts;
+        inner.append(tLbl, tText);
+      }
+
+      const filledGrat = (entry.gratitude || []).filter(Boolean);
+      if (filledGrat.length) {
+        const gLbl = document.createElement('div');
+        gLbl.className = 'entry-section-lbl';
+        gLbl.textContent = 'Gratitude';
+        const gList = document.createElement('ul');
+        gList.className = 'entry-grat-list';
+        filledGrat.forEach(function(g, i) {
+          const li = document.createElement('li');
+          li.innerHTML = '<span class="grat-num">' + (i + 1) + '.</span> ' + escHtml(g);
+          gList.appendChild(li);
+        });
+        inner.append(gLbl, gList);
+      }
+
+      body.appendChild(inner);
+      card.append(head, body);
+      pastListEl.appendChild(card);
+    });
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── init ──────────────────────────────────────────────────────────
+  prefillComposer();
+  renderAll();
+
+  // Re-render when another device pushes a sync
+  window.addEventListener('storage', function(e) {
+    if (!e.key || e.key === STORE_KEY) {
+      prefillComposer();
+      renderAll();
+    }
+  });
+
+  // ── cloud sync ────────────────────────────────────────────────────
+  window.addEventListener('load', function() {
+    if (window.initCloudSync) {
+      window.initCloudSync({
+        appKey: 'journal',
+        syncedKeys: [STORE_KEY],
+        onApplied: function() {
+          prefillComposer();
+          renderAll();
+        }
+      });
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
