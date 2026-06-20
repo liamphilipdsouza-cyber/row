@@ -238,6 +238,53 @@ body::after {
   .day-ring-status { font-size: 13px; }
 }
 
+/* ===== Sleep log ===== */
+.sleep-log { display: flex; flex-direction: column; gap: 9px; }
+.sleep-summary { display: flex; align-items: baseline; gap: 9px; }
+.sleep-total {
+  font-family: var(--font-mono); font-size: 15px; font-weight: 700;
+  color: var(--text-primary); font-variant-numeric: tabular-nums;
+}
+.sleep-delta {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.sleep-delta.gain { color: #6BE3A4; }
+.sleep-delta.loss { color: #FF6B6B; }
+.sleep-inputs { display: flex; align-items: flex-end; gap: 7px; flex-wrap: wrap; }
+.sleep-field { display: flex; flex-direction: column; gap: 3px; }
+.sleep-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.sleep-time-input {
+  padding: 7px 9px;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 9px;
+  background: rgba(0,0,0,0.28);
+  color: var(--text-primary); color-scheme: dark;
+  font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+  width: 96px; outline: none; -webkit-appearance: none;
+  transition: border-color 0.18s;
+}
+.sleep-time-input:focus { border-color: rgba(255,255,255,0.24); }
+.sleep-sep { color: var(--text-tertiary); font-size: 13px; padding-bottom: 9px; }
+.sleep-log-btn {
+  padding: 7px 14px; border: 0; border-radius: 9px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #E8E5DD 100%);
+  color: #0A0A0B; font-family: inherit; font-size: 11px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 6px rgba(0,0,0,0.3);
+  transition: transform 0.1s, filter 0.12s; white-space: nowrap;
+}
+.sleep-log-btn:hover { filter: brightness(1.06); }
+.sleep-log-btn:active { transform: scale(0.96); }
+.sleep-saved-msg {
+  font-size: 10px; font-weight: 600; color: #6BE3A4;
+  opacity: 0; transition: opacity 0.22s; letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sleep-saved-msg.show { opacity: 1; }
+
 /* ===== Component 4: section + To Do List ===== */
 .section { margin-top: 8px; }
 .section-title {
@@ -635,7 +682,25 @@ body::after {
     <div class="day-ring-text">
       <div class="day-ring-status"    id="dayRingStatus">Loading…</div>
       <div class="day-ring-remaining" id="dayRingRemaining">—</div>
-      <div class="day-ring-hours">8:00 AM – 12:00 AM</div>
+      <div class="sleep-log" id="sleepLog">
+        <div class="sleep-summary">
+          <span class="sleep-total" id="sleepTotal">— h —m</span>
+          <span class="sleep-delta" id="sleepDelta"></span>
+        </div>
+        <div class="sleep-inputs">
+          <label class="sleep-field">
+            <span class="sleep-lbl">Bed</span>
+            <input type="time" class="sleep-time-input" id="sleepBed" autocomplete="off">
+          </label>
+          <span class="sleep-sep">→</span>
+          <label class="sleep-field">
+            <span class="sleep-lbl">Wake</span>
+            <input type="time" class="sleep-time-input" id="sleepWake" autocomplete="off">
+          </label>
+          <button class="sleep-log-btn" id="sleepLogBtn" type="button">Log</button>
+        </div>
+        <span class="sleep-saved-msg" id="sleepSavedMsg">Saved ✓</span>
+      </div>
     </div>
   </div>
 
@@ -1291,6 +1356,103 @@ body::after {
     loadTomorrow
   );
 
+  // ---------- Sleep log ----------
+  const SLEEP_LOG_KEY = 'goals:sleep';
+
+  function getSleepLogs() { return storeGet(SLEEP_LOG_KEY) || {}; }
+
+  function getYesterdayDateString() {
+    const active = getActiveDateString();
+    const [y, m, d] = active.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() - 1);
+    return dateToKey(dt);
+  }
+
+  function calcSleepMins(bed, wake) {
+    const [bh, bm] = bed.split(':').map(Number);
+    const [wh, wm] = wake.split(':').map(Number);
+    let dur = (wh * 60 + wm) - (bh * 60 + bm);
+    if (dur <= 0) dur += 1440; // overnight
+    return dur;
+  }
+
+  function fmtSleepDur(mins) {
+    return Math.floor(mins / 60) + 'h ' + pad2(mins % 60) + 'm';
+  }
+
+  function renderSleep() {
+    const logs     = getSleepLogs();
+    const today    = getActiveDateString();
+    const yest     = getYesterdayDateString();
+    const todayLog = logs[today];
+    const yestLog  = logs[yest];
+
+    const totalEl   = document.getElementById('sleepTotal');
+    const deltaEl   = document.getElementById('sleepDelta');
+    const bedEl     = document.getElementById('sleepBed');
+    const wakeEl    = document.getElementById('sleepWake');
+    if (!totalEl) return;
+
+    if (todayLog && todayLog.bed && todayLog.wake) {
+      const todayMins = calcSleepMins(todayLog.bed, todayLog.wake);
+      totalEl.textContent = fmtSleepDur(todayMins);
+      if (bedEl  && document.activeElement !== bedEl)  bedEl.value  = todayLog.bed;
+      if (wakeEl && document.activeElement !== wakeEl) wakeEl.value = todayLog.wake;
+
+      if (yestLog && yestLog.bed && yestLog.wake) {
+        const yestMins  = calcSleepMins(yestLog.bed, yestLog.wake);
+        const deltaPct  = Math.round((todayMins - yestMins) / yestMins * 100);
+        if (deltaPct > 0) {
+          deltaEl.textContent = '+' + deltaPct + '%';
+          deltaEl.className   = 'sleep-delta gain';
+        } else if (deltaPct < 0) {
+          deltaEl.textContent = deltaPct + '%';
+          deltaEl.className   = 'sleep-delta loss';
+        } else {
+          deltaEl.textContent = '±0%';
+          deltaEl.className   = 'sleep-delta';
+        }
+      } else {
+        deltaEl.textContent = '';
+        deltaEl.className   = 'sleep-delta';
+      }
+    } else {
+      totalEl.textContent = '— h —m';
+      deltaEl.textContent = '';
+      deltaEl.className   = 'sleep-delta';
+    }
+  }
+
+  (function initSleepLog() {
+    const logBtn   = document.getElementById('sleepLogBtn');
+    const savedMsg = document.getElementById('sleepSavedMsg');
+    const bedEl    = document.getElementById('sleepBed');
+    const wakeEl   = document.getElementById('sleepWake');
+    if (!logBtn) return;
+
+    logBtn.addEventListener('click', function () {
+      const bed  = bedEl.value.trim();
+      const wake = wakeEl.value.trim();
+      if (!bed || !wake) return;
+      const logs = getSleepLogs();
+      logs[getActiveDateString()] = { bed, wake };
+      storeSet(SLEEP_LOG_KEY, logs);
+      renderSleep();
+      savedMsg.classList.add('show');
+      setTimeout(function () { savedMsg.classList.remove('show'); }, 1800);
+    });
+
+    // Log on Enter in either input
+    [bedEl, wakeEl].forEach(function (el) {
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') logBtn.click();
+      });
+    });
+
+    renderSleep();
+  })();
+
   // ---------- Boot ----------
   rollover();
   processStreak();
@@ -1303,7 +1465,7 @@ body::after {
 
   // Re-render when storage changes from another tab (or our bridged parent).
   window.addEventListener('storage', () => {
-    loadToday(); loadTomorrow(); renderStreak();
+    loadToday(); loadTomorrow(); renderStreak(); renderSleep();
   });
 })();
 </script>
