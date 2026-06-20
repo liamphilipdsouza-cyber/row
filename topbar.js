@@ -272,17 +272,52 @@ body.topbar-modal-open { overflow: hidden; touch-action: none; }
       caffeineMgPerDay: 200, substances: [], logs: {}
     };
   }
+
+  // Cached Supabase client so we don't create a new one on every poll.
+  let _supaWater = null;
+  function getSupaWater() {
+    if (_supaWater) return _supaWater;
+    if (!window.supabase || !TOPBAR_SUPABASE_URL || !TOPBAR_SUPABASE_KEY) return null;
+    if (TOPBAR_SUPABASE_URL.indexOf('PASTE-') === 0) return null;
+    try { _supaWater = window.supabase.createClient(TOPBAR_SUPABASE_URL, TOPBAR_SUPABASE_KEY); }
+    catch (e) {}
+    return _supaWater;
+  }
+
   async function pushWaterMergedToSupabase(localWater) {
-    if (!window.supabase || !TOPBAR_SUPABASE_URL || !TOPBAR_SUPABASE_KEY) return;
-    if (TOPBAR_SUPABASE_URL.indexOf('PASTE-') === 0) return;
+    const supa = getSupaWater();
+    if (!supa) return;
     try {
-      const supa = window.supabase.createClient(TOPBAR_SUPABASE_URL, TOPBAR_SUPABASE_KEY);
       await supa.from('app_state').upsert(
         { key: 'water', data: { po_water_v1: localWater }, updated_at: new Date().toISOString() },
         { onConflict: 'key' }
       );
     } catch (e) {}
   }
+
+  let _lastWaterJson = null;
+  async function pullWaterFromSupabase() {
+    const supa = getSupaWater();
+    if (!supa) return;
+    try {
+      const { data, error } = await supa
+        .from('app_state')
+        .select('data')
+        .eq('key', 'water')
+        .maybeSingle();
+      if (error || !data || !data.data || !data.data.po_water_v1) return;
+      const incoming = JSON.stringify(data.data.po_water_v1);
+      if (incoming === _lastWaterJson) return;   // nothing changed
+      _lastWaterJson = incoming;
+      const remote = data.data.po_water_v1;
+      const local = JSON.stringify(JSON.parse(localStorage.getItem('po_water_v1') || 'null'));
+      if (incoming !== local) {
+        try { localStorage.setItem('po_water_v1', JSON.stringify(remote)); } catch (e) {}
+        render();
+      }
+    } catch (e) {}
+  }
+
   function addWater() {
     let state = null;
     try { state = JSON.parse(localStorage.getItem('po_water_v1')); } catch (e) {}
@@ -334,9 +369,13 @@ body.topbar-modal-open { overflow: hidden; touch-action: none; }
     lockGestures();
     startModalLock();
     window.addEventListener('storage', render);
-    window.addEventListener('focus', render);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
-    setInterval(render, 30 * 1000);
+    window.addEventListener('focus', () => { render(); pullWaterFromSupabase(); });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) { render(); pullWaterFromSupabase(); }
+    });
+    // Pull on load + poll every 30s
+    pullWaterFromSupabase();
+    setInterval(() => { render(); pullWaterFromSupabase(); }, 30 * 1000);
   }
 
   if (document.readyState === 'loading') {
